@@ -1,0 +1,97 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNZqrXREP3IGlqvpcLKErOQ",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/hungboo511/BTL-Ph-n-t-ch-chu-i-th-i-gian/blob/main/Bai4\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "LtgR8fk42u3f"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.preprocessing import StandardScaler, QuantileTransformer\n",
+        "from sklearn.decomposition import PCA\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.ensemble import GradientBoostingClassifier\n",
+        "from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report\n",
+        "import xgboost as xgb # Bài báo gợi ý các thuật toán Gradient Boosting như XGBoost [cite: 96]\n",
+        "\n",
+        "# 1. DATA COLLECTION (Giả lập tải dữ liệu từ Kaggle [cite: 86])\n",
+        "# Dữ liệu thực tế sẽ bao gồm 5 file cho: Tiểu đường, Ung thư phổi, Thận, Parkinson, Tim.\n",
+        "# Ở đây tái hiện ví dụ cho 1 bệnh (vd: Parkinson)\n",
+        "data = pd.read_csv('parkinsons_disease_dataset.csv')\n",
+        "X = data.drop('target', axis=1) # Đặc trưng lâm sàng\n",
+        "y = data['target'] # Nhãn bệnh (0 hoặc 1)\n",
+        "\n",
+        "# 2. DATA SPLITTING\n",
+        "# Chia tập huấn luyện và kiểm tra với tỷ lệ 80/20\n",
+        "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n",
+        "\n",
+        "# 3. PREPROCESSING PIPELINE\n",
+        "# Bám sát flowchart: PCA -> Quantile Transform -> StandardScaler\n",
+        "preprocessing_steps = [\n",
+        "    ('pca', PCA(n_components=0.95)), # Giữ lại 95% phương sai\n",
+        "    ('quantile', QuantileTransformer(n_quantiles=100, random_state=42)), # Tùy chọn theo điều kiện số lớp\n",
+        "    ('scaler', StandardScaler())\n",
+        "]\n",
+        "\n",
+        "# 4. MODEL DEVELOPMENT\n",
+        "# Sử dụng thuật toán Gradient Boosting [cite: 94]\n",
+        "# Tác giả đề cập đến việc dùng Adaptive Boosting Classifier để tối ưu/tuning [cite: 20, 121]\n",
+        "# Trong scikit-learn, ta có thể xây dựng một pipeline hoàn chỉnh:\n",
+        "model_pipeline = Pipeline(steps=preprocessing_steps + [\n",
+        "    ('classifier', GradientBoostingClassifier(\n",
+        "        learning_rate=0.1,\n",
+        "        n_estimators=100,\n",
+        "        max_depth=3,\n",
+        "        random_state=42\n",
+        "    ))\n",
+        "])\n",
+        "\n",
+        "# 5. LEARNING ALGORITHM TRAINING\n",
+        "model_pipeline.fit(X_train, y_train)\n",
+        "\n",
+        "# 6. PREDICTION & FINAL MODEL EVALUATION [cite: 137, 139]\n",
+        "y_pred = model_pipeline.predict(X_test)\n",
+        "\n",
+        "# Đánh giá bằng Accuracy, Precision, Recall và F1-Score [cite: 107]\n",
+        "print(\"--- KẾT QUẢ ĐÁNH GIÁ MÔ HÌNH ---\")\n",
+        "print(f\"Accuracy: {accuracy_score(y_test, y_pred):.2f}\")\n",
+        "print(f\"Precision: {precision_score(y_test, y_pred, average='weighted'):.2f}\")\n",
+        "print(f\"Recall: {recall_score(y_test, y_pred, average='weighted'):.2f}\")\n",
+        "print(f\"F1-Score: {f1_score(y_test, y_pred, average='weighted'):.2f}\")\n",
+        "\n",
+        "# In chi tiết báo cáo giống như Bảng kết quả (Classification Report) trong báo cáo [cite: 107, 121]\n",
+        "print(\"\\nClassification Report:\")\n",
+        "print(classification_report(y_test, y_pred))"
+      ]
+    }
+  ]
+}
